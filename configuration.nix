@@ -5,38 +5,26 @@
 { config, pkgs, ... }:
 
 let
-       home-manager = builtins.fetchGit {
-       url = "https://github.com/rycee/home-manager.git";
-       rev = "249650a07ee2d949fa599f3177a8c234adbd1bee";
-       ref = "master";
-       };
+  home-manager = builtins.fetchGit {
+    url = "https://github.com/rycee/home-manager.git";
+    rev = "249650a07ee2d949fa599f3177a8c234adbd1bee";
+    ref = "master";
+  };
 
-
-
-in
-{
-  imports =
-    [ # Include the results of the hardware scan.
-      ./hardware-configuration.nix
-      "${home-manager}/nixos"
-    ];
-
-
-
-         
-
-
-
-
+in {
+  imports = [ # Include the results of the hardware scan.
+    ./hardware-configuration.nix
+    "${home-manager}/nixos"
+  ];
 
   # Use the systemd-boot EFI boot loader.
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
 
-    networking.hostName = "gunnest663"; # Define your hostname.
+  networking.hostName = "gunnest663"; # Define your hostname.
   # networking.wireless.enable = true;  # Enables wireless support via wpa_supplicant.
 
-    boot.supportedFilesystems = [ "ntfs" ];
+  boot.supportedFilesystems = [ "ntfs" ];
 
   # The global useDHCP flag is deprecated, therefore explicitly set to false here.
   # Per-interface useDHCP will be mandatory in the future, so this generated config
@@ -56,19 +44,40 @@ in
   # };
 
   # Set your time zone.
-    time.timeZone = "Australia/Perth";
+  time.timeZone = "Australia/Perth";
 
   # List packages installed in system profile. To search, run:
   # $ nix search wget
-    environment.systemPackages = with pkgs; [
-      wget vim vscode google-chrome home-manager htop gnome3.gnome-system-monitor neofetch gnome3.dconf-editor gparted nix-index steam discord papirus-icon-theme unzip libcef lshw glxinfo numix-gtk-theme user-manager morph git
-    ];
+  environment.systemPackages = with pkgs; [
+    wget
+    vim
+    vscode
+    google-chrome
+    home-manager
+    htop
+    gnome3.gnome-system-monitor
+    neofetch
+    gnome3.dconf-editor
+    gparted
+    nix-index
+    nixfmt
+    steam
+    discord
+    papirus-icon-theme
+    unzip
+    libcef
+    lshw
+    glxinfo
+    numix-gtk-theme
+    user-manager
+    morph
+    git
+  ];
 
-
-    hardware.opengl.driSupport32Bit = true;
+  hardware.opengl.driSupport32Bit = true;
 
   # Allow free
-    nixpkgs.config.allowUnfree = true;
+  nixpkgs.config.allowUnfree = true;
 
   # Some programs need SUID wrappers, can be configured further or are
   # started in user sessions.
@@ -97,11 +106,10 @@ in
   # sound.enable = true;
   # hardware.pulseaudio.enable = true;
 
-  # Enable the X11 windowing system.
-  # services.xserver.enable = true;
+  # Enable the X11 windowing system.s
   # services.xserver.layout = "us";
   # services.xserver.xkbOptions = "eurosign:e";
-    services.xserver.videoDrivers = [ "nvidia" ];
+  services.xserver.videoDrivers = [ "nvidia" ];
   # Enable touchpad support.
   # services.xserver.libinput.enable = true;
 
@@ -112,10 +120,10 @@ in
   # services.xserver.displayManager.gdm.enable = true;
 
   # Pantheon Desktop
-    services.xserver.desktopManager.pantheon.enable = true;
-    services.xserver.displayManager.lightdm.enable = true;
-    services.xserver.windowManager.openbox.enable = true;
-    services.xserver.enable = true;
+  services.xserver.desktopManager.pantheon.enable = true;
+  services.xserver.displayManager.lightdm.enable = true;
+  services.xserver.windowManager.openbox.enable = true;
+  services.xserver.enable = true;
   # Enable the KDE Desktop Environment.
   # services.xserver.displayManager.sddm.enable = true;
   # services.xserver.desktopManager.plasma5.enable = true;
