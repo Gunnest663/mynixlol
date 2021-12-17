@@ -4,41 +4,28 @@
 
 { config, pkgs, ... }:
 
-let
-  home-manager = builtins.fetchGit {
-    url = "https://github.com/rycee/home-manager.git";
-    rev = "249650a07ee2d949fa599f3177a8c234adbd1bee";
-    ref = "master";
-  };
-
-in {
+{
   imports = [ # Include the results of the hardware scan.
     ./hardware-configuration.nix
-    "${home-manager}/nixos"
   ];
-
-  home-manager.users.gunnest663 = {
-    dconf.settings = {
-      "org/pantheon/desktop/gala/appearance" = {
-        button-layout = ":minimize,maximize,close";
-      };
-    };
-  };
 
   # Use the systemd-boot EFI boot loader.
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
 
-  networking.hostName = "gunnest663"; # Define your hostname.
+  boot.supportedFilesystems = [ "ntfs" ];
+
+  networking.hostName = "sensokaku-pc"; # Define your hostname.
   # networking.wireless.enable = true;  # Enables wireless support via wpa_supplicant.
 
-  boot.supportedFilesystems = [ "ntfs" ];
+  # Set your time zone.
+  time.timeZone = "Australia/Perth";
 
   # The global useDHCP flag is deprecated, therefore explicitly set to false here.
   # Per-interface useDHCP will be mandatory in the future, so this generated config
   # replicates the default behaviour.
   networking.useDHCP = false;
-  networking.interfaces.enp3s0.useDHCP = true;
+  networking.interfaces.enp9s0.useDHCP = true;
 
   # Configure network proxy if necessary
   # networking.proxy.default = "http://user:password@proxy:port/";
@@ -51,36 +38,142 @@ in {
   #   keyMap = "us";
   # };
 
-  # Set your time zone.
-  time.timeZone = "Australia/Perth";
+  # Enable the X11 windowing system.
+  services.xserver.enable = true;
+
+  # Enable the GNOME Desktop Environment.
+  services.xserver.displayManager.gdm.enable = true;
+  services.xserver.desktopManager.gnome.enable = true;
+  services.xserver.videoDrivers = [ "nvidia" ];
+
+  # Configure keymap in X11
+  # services.xserver.layout = "us";
+  # services.xserver.xkbOptions = "eurosign:e";
+
+  # Enable CUPS to print documents.
+  # services.printing.enable = true;
+
+  # Enable sound.
+  sound.enable = false;
+  hardware.pulseaudio.enable = false;
+  security.rtkit.enable = true;
+  services.pipewire = {
+    config.pipewire = {
+      "context.properties" = {
+        "link.max-buffers" = 16;
+        "log.level" = 2;
+        "default.clock.rate" = 48000;
+        "default.clock.quantum" = 32;
+        "default.clock.min-quantum" = 32;
+        "default.clock.max-quantum" = 32;
+        "core.daemon" = true;
+        "core.name" = "pipewire-0";
+      };
+      "context.modules" = [
+        {
+          name = "libpipewire-module-rtkit";
+          args = {
+            "nice.level" = -15;
+            "rt.prio" = 88;
+            "rt.time.soft" = 200000;
+            "rt.time.hard" = 200000;
+          };
+          flags = [ "ifexists" "nofail" ];
+        }
+        { name = "libpipewire-module-protocol-native"; }
+        { name = "libpipewire-module-profiler"; }
+        { name = "libpipewire-module-metadata"; }
+        { name = "libpipewire-module-spa-device-factory"; }
+        { name = "libpipewire-module-spa-node-factory"; }
+        { name = "libpipewire-module-client-node"; }
+        { name = "libpipewire-module-client-device"; }
+        {
+          name = "libpipewire-module-portal";
+          flags = [ "ifexists" "nofail" ];
+        }
+        {
+          name = "libpipewire-module-access";
+          args = { };
+        }
+        { name = "libpipewire-module-adapter"; }
+        { name = "libpipewire-module-link-factory"; }
+        { name = "libpipewire-module-session-manager"; }
+      ];
+    };
+    config.pipewire-pulse = {
+      "context.properties" = { "log.level" = 2; };
+      "context.modules" = [
+        {
+          name = "libpipewire-module-rtkit";
+          args = {
+            "nice.level" = -15;
+            "rt.prio" = 88;
+            "rt.time.soft" = 200000;
+            "rt.time.hard" = 200000;
+          };
+          flags = [ "ifexists" "nofail" ];
+        }
+        { name = "libpipewire-module-protocol-native"; }
+        { name = "libpipewire-module-client-node"; }
+        { name = "libpipewire-module-adapter"; }
+        { name = "libpipewire-module-metadata"; }
+        {
+          name = "libpipewire-module-protocol-pulse";
+          args = {
+            "pulse.min.req" = "32/48000";
+            "pulse.default.req" = "32/48000";
+            "pulse.max.req" = "32/48000";
+            "pulse.min.quantum" = "32/48000";
+            "pulse.max.quantum" = "32/48000";
+            "server.address" = [ "unix:native" ];
+          };
+        }
+      ];
+      "stream.properties" = {
+        "node.latency" = "32/48000";
+        "resample.quality" = 1;
+      };
+    };
+    enable = true;
+    alsa.enable = true;
+    alsa.support32Bit = true;
+    pulse.enable = true;
+    jack.enable = true;
+  };
+
+  # Enable touchpad support (enabled default in most desktopManager).
+  # services.xserver.libinput.enable = true;
+
+  # Define a user account. Don't forget to set a password with ‘passwd’.
+  users.users.sensokaku = {
+    isNormalUser = true;
+    extraGroups = [ "wheel" ]; # Enable ‘sudo’ for the user.
+  };
 
   # List packages installed in system profile. To search, run:
   # $ nix search wget
   environment.systemPackages = with pkgs; [
-    wget
     vim
     vscode
-    google-chrome
-    home-manager
+    wget
+    brave
     htop
-    gnome3.gnome-system-monitor
     neofetch
-    gnome3.dconf-editor
+    discord
+    steam
+    unzip
+    git
+    spotify
     gparted
     nix-index
     nixfmt
-    steam
-    discord
     papirus-icon-theme
-    unzip
-    libcef
-    lshw
-    glxinfo
     numix-gtk-theme
-    user-manager
-    morph
-    git
-    spotify
+    pavucontrol
+    pulseaudio
+    pkgs.gnome3.gnome-tweaks
+    gnomeExtensions.arc-menu
+    gnomeExtensions.dash-to-panel
   ];
 
   hardware.opengl.driSupport32Bit = true;
@@ -94,7 +187,6 @@ in {
   # programs.gnupg.agent = {
   #   enable = true;
   #   enableSSHSupport = true;
-  #   pinentryFlavor = "gnome3";
   # };
 
   # List services that you want to enable:
@@ -108,48 +200,13 @@ in {
   # Or disable the firewall altogether.
   # networking.firewall.enable = false;
 
-  # Enable CUPS to print documents.
-  # services.printing.enable = true;
-
-  # Enable sound.
-  # sound.enable = true;
-  # hardware.pulseaudio.enable = true;
-
-  # Enable the X11 windowing system.s
-  # services.xserver.layout = "us";
-  # services.xserver.xkbOptions = "eurosign:e";
-  services.xserver.videoDrivers = [ "nvidia" ];
-  # Enable touchpad support.
-  # services.xserver.libinput.enable = true;
-
-  # Xfce Desktop
-  # services.xserver.desktopManager.xfce.enableXfwm = true;
-  # services.xserver.desktopManager.xfce.enable = true;
-  # services.xserver.displayManager.defaultSession = "plasma5";
-  # services.xserver.displayManager.gdm.enable = true;
-
-  # Pantheon Desktop
-  services.xserver.desktopManager.pantheon.enable = true;
-  services.xserver.displayManager.lightdm.enable = true;
-  services.xserver.windowManager.openbox.enable = true;
-  services.xserver.enable = true;
-  # Enable the KDE Desktop Environment.
-  # services.xserver.displayManager.sddm.enable = true;
-  # services.xserver.desktopManager.plasma5.enable = true;
-
-  # Define a user account. Don't forget to set a password with ‘passwd’.
-  users.users.gunnest663 = {
-    isNormalUser = true;
-    extraGroups = [ "wheel" ]; # Enable ‘sudo’ for the user.
-  };
-
   # This value determines the NixOS release from which the default
   # settings for stateful data, like file locations and database versions
   # on your system were taken. It‘s perfectly fine and recommended to leave
   # this value at the release version of the first install of this system.
   # Before changing this value read the documentation for this option
   # (e.g. man configuration.nix or on https://nixos.org/nixos/options.html).
-  system.stateVersion = "20.03"; # Did you read the comment?
+  system.stateVersion = "21.11"; # Did you read the comment?
 
 }
 
