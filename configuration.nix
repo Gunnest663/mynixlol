@@ -2,12 +2,22 @@
 # your system.  Help is available in the configuration.nix(5) man page
 # and in the NixOS manual (accessible by running ‘nixos-help’).
 
-{ config, pkgs, ... }:
+{ config, pkgs, lib, ... }:
 
-{
+let
+  home-manager = builtins.fetchTarball
+    "https://github.com/nix-community/home-manager/archive/master.tar.gz";
+
+in {
   imports = [ # Include the results of the hardware scan.
     ./hardware-configuration.nix
+    "${home-manager}/nixos"
   ];
+
+  # home-manager stuff
+  home-manager.users.sensokaku = {
+    # nothing to put here yet...
+  };
 
   # Use the systemd-boot EFI boot loader.
   boot.loader.systemd-boot.enable = true;
@@ -15,7 +25,7 @@
 
   boot.supportedFilesystems = [ "ntfs" ];
 
-  networking.hostName = "sensokaku-pc"; # Define your hostname.
+  networking.hostName = "KakuPC"; # Define your hostname.
   # networking.wireless.enable = true;  # Enables wireless support via wpa_supplicant.
 
   # Set your time zone.
@@ -38,13 +48,18 @@
   #   keyMap = "us";
   # };
 
-  # Enable the X11 windowing system.
-  services.xserver.enable = true;
+  # Novideo
+  hardware.nvidia.modesetting.enable = true;
 
-  # Enable the GNOME Desktop Environment.
-  services.xserver.displayManager.gdm.enable = true;
-  services.xserver.desktopManager.gnome.enable = true;
-  services.xserver.videoDrivers = [ "nvidia" ];
+  # Enable ANY Desktop Environment.
+  services.xserver = {
+    enable = true;
+    videoDrivers = [ "nvidia" ];
+    displayManager.sddm = { enable = true; };
+    desktopManager.plasma5.enable = true;
+  };
+
+  # services.udev.packages = with pkgs; [ gnome3.gnome-settings-daemon ];
 
   # Configure keymap in X11
   # services.xserver.layout = "us";
@@ -58,87 +73,12 @@
   hardware.pulseaudio.enable = false;
   security.rtkit.enable = true;
   services.pipewire = {
-    config.pipewire = {
-      "context.properties" = {
-        "link.max-buffers" = 16;
-        "log.level" = 2;
-        "default.clock.rate" = 48000;
-        "default.clock.quantum" = 32;
-        "default.clock.min-quantum" = 32;
-        "default.clock.max-quantum" = 32;
-        "core.daemon" = true;
-        "core.name" = "pipewire-0";
-      };
-      "context.modules" = [
-        {
-          name = "libpipewire-module-rtkit";
-          args = {
-            "nice.level" = -15;
-            "rt.prio" = 88;
-            "rt.time.soft" = 200000;
-            "rt.time.hard" = 200000;
-          };
-          flags = [ "ifexists" "nofail" ];
-        }
-        { name = "libpipewire-module-protocol-native"; }
-        { name = "libpipewire-module-profiler"; }
-        { name = "libpipewire-module-metadata"; }
-        { name = "libpipewire-module-spa-device-factory"; }
-        { name = "libpipewire-module-spa-node-factory"; }
-        { name = "libpipewire-module-client-node"; }
-        { name = "libpipewire-module-client-device"; }
-        {
-          name = "libpipewire-module-portal";
-          flags = [ "ifexists" "nofail" ];
-        }
-        {
-          name = "libpipewire-module-access";
-          args = { };
-        }
-        { name = "libpipewire-module-adapter"; }
-        { name = "libpipewire-module-link-factory"; }
-        { name = "libpipewire-module-session-manager"; }
-      ];
-    };
-    config.pipewire-pulse = {
-      "context.properties" = { "log.level" = 2; };
-      "context.modules" = [
-        {
-          name = "libpipewire-module-rtkit";
-          args = {
-            "nice.level" = -15;
-            "rt.prio" = 88;
-            "rt.time.soft" = 200000;
-            "rt.time.hard" = 200000;
-          };
-          flags = [ "ifexists" "nofail" ];
-        }
-        { name = "libpipewire-module-protocol-native"; }
-        { name = "libpipewire-module-client-node"; }
-        { name = "libpipewire-module-adapter"; }
-        { name = "libpipewire-module-metadata"; }
-        {
-          name = "libpipewire-module-protocol-pulse";
-          args = {
-            "pulse.min.req" = "32/48000";
-            "pulse.default.req" = "32/48000";
-            "pulse.max.req" = "32/48000";
-            "pulse.min.quantum" = "32/48000";
-            "pulse.max.quantum" = "32/48000";
-            "server.address" = [ "unix:native" ];
-          };
-        }
-      ];
-      "stream.properties" = {
-        "node.latency" = "32/48000";
-        "resample.quality" = 1;
-      };
-    };
     enable = true;
     alsa.enable = true;
     alsa.support32Bit = true;
     pulse.enable = true;
-    jack.enable = true;
+    # If you want to use JACK applications, uncomment this
+    #jack.enable = true;
   };
 
   # Enable touchpad support (enabled default in most desktopManager).
@@ -152,34 +92,63 @@
 
   # List packages installed in system profile. To search, run:
   # $ nix search wget
+
   environment.systemPackages = with pkgs; [
     vim
-    vscode
     wget
     brave
+    git
+    vscode
     htop
     neofetch
-    discord
-    steam
-    unzip
-    git
-    spotify
     gparted
-    nix-index
+    unzip
     nixfmt
-    papirus-icon-theme
-    numix-gtk-theme
+    nix-index
+    #gnome.gnome-tweaks
+    #gnomeExtensions.arcmenu
+    #gnomeExtensions.dash-to-panel
+    #gnomeExtensions.appindicator
     pavucontrol
-    pulseaudio
-    pkgs.gnome3.gnome-tweaks
-    gnomeExtensions.arc-menu
-    gnomeExtensions.dash-to-panel
+    materia-theme
+    papirus-icon-theme
+    spotify
+    arandr
+    kde-gtk-config
+    # Work around #159267
+    (pkgs.writeShellApplication {
+      name = "discord";
+      text = "${pkgs.discord}/bin/discord --use-gl=desktop";
+    })
+    (pkgs.makeDesktopItem {
+      name = "discord";
+      exec = "discord";
+      desktopName = "Discord";
+    })
   ];
 
-  hardware.opengl.driSupport32Bit = true;
+  # Flatpak
+  services.flatpak.enable = true;
 
   # Allow free
   nixpkgs.config.allowUnfree = true;
+
+  # Steam
+  nixpkgs.config.packageOverrides = pkgs: {
+    steam =
+      pkgs.steam.override { extraPkgs = pkgs: with pkgs; [ libgdiplus ]; };
+  };
+
+  nixpkgs.config.allowUnfreePredicate = pkg:
+    builtins.elem (lib.getName pkg) [
+      "steam"
+      "steam-original"
+      "steam-runtime"
+    ];
+
+  programs.steam.enable = true;
+  hardware.steam-hardware.enable = true;
+  hardware.opengl.driSupport32Bit = true;
 
   # Some programs need SUID wrappers, can be configured further or are
   # started in user sessions.
