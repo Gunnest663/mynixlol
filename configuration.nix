@@ -4,6 +4,8 @@
   imports = [
     ./hardware-configuration.nix
     ./nvidia.nix 
+    ./steam.nix 
+    ./packages.nix
   ];
 
   # Bootloader
@@ -32,7 +34,7 @@
 
   # Enable networking
   networking.networkmanager.enable = true;
-  networking.hostName = "nixos";
+  networking.hostName = "KakuPC";
   # networking.wireless.enable = true;
 
   # Time Zone
@@ -74,46 +76,6 @@
     isNormalUser = true;
     description = "Sensokaku";
     extraGroups = [ "networkmanager" "wheel" ];
-  };
-
-  # Allow unfree packages
-  nixpkgs.config.allowUnfree = true;
-
-  # Installed Packages
-  environment.systemPackages = with pkgs; [
-    gnome.gnome-tweaks
-    gnomeExtensions.arcmenu
-    steam
-    (pkgs.writeShellApplication {
-      name = "discord";
-      text = "${pkgs.discord}/bin/discord --use-gl=desktop";
-    })
-    (pkgs.makeDesktopItem {
-      name = "discord";
-      exec = "discord";
-      desktopName = "Discord";
-    })
-    google-chrome
-    obs-studio
-    vscode
-    github-desktop
-    nix-index
-    git
-    neofetch
-    htop
-    wget
-    fd
-    unzip
-    nixfmt
-    spotify
-    qt5ct
-  ];
-
-  # Enable Steam
-  programs.steam = {
-    enable = true;
-    remotePlay.openFirewall = true;
-    dedicatedServer.openFirewall = true;
   };
 
   # Qt Theme
